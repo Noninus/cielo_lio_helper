@@ -214,7 +214,7 @@ class CieloLioHelperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, Plu
     activity?.startActivity(i)
   }
 
-  override fun onNewIntent(intent: Intent?): Boolean {
+  override fun onNewIntent(intent: Intent): Boolean {
     if (intent != null) {
       handleIntent(intent, false)
     }
