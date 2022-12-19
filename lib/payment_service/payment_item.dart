@@ -3,11 +3,11 @@ class PaymentItem {
   String? details;
   String? id;
   String? name;
-  int? quantity;
+  num? quantity;
   String? reference;
   String? sku;
   String? unitOfMeasure;
-  int? unitPrice;
+  num? unitPrice;
 
   PaymentItem(
       {this.description,

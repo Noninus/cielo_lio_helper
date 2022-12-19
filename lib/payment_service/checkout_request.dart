@@ -58,8 +58,8 @@ class CheckoutRequest {
 class Item {
   String? sku;
   String? name;
-  int? unitPrice;
-  int? quantity;
+  num? unitPrice;
+  num? quantity;
   String? unitOfMeasure;
 
   Item({
