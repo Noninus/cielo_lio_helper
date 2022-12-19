@@ -1,7 +1,7 @@
 class CheckoutRequest {
   String? clientID;
   String? accessToken;
-  num? value;
+  int? value;
   String? paymentCode;
   int? installments;
   String? email;
@@ -58,8 +58,8 @@ class CheckoutRequest {
 class Item {
   String? sku;
   String? name;
-  num? unitPrice;
-  num? quantity;
+  int? unitPrice;
+  int? quantity;
   String? unitOfMeasure;
 
   Item({
