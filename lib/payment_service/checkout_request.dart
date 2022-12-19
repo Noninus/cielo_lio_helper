@@ -1,7 +1,7 @@
 class CheckoutRequest {
   String? clientID;
   String? accessToken;
-  int? value;
+  num? value;
   String? paymentCode;
   int? installments;
   String? email;

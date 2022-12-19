@@ -5,7 +5,7 @@ class CancelRequest {
   String? cieloCode;
   String? authCode;
   String? merchantCode;
-  int? value;
+  num? value;
 
   CancelRequest({
     this.id,
