@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:cielo_lio_helper/lio_response.dart';
 import 'package:cielo_lio_helper/payment_service/checkout_request.dart';
+import 'package:cielo_lio_helper/printer_service/print_operation.dart';
 import 'package:flutter/services.dart';
 
 import 'payment_service/payment_service.dart';
@@ -32,9 +33,9 @@ class CieloLioHelper {
   }
 
   /// Enqueue text and its style but does not print
-  static enqueue(
-      String text, PrintAlignment alignment, int size, int typeface) {
-    _printer!.enqueue(text, alignment, size, typeface);
+  static enqueue(String text, PrintAlignment alignment, int size, int typeface,
+      String operation) {
+    _printer!.enqueue(text, alignment, size, typeface, operation);
   }
 
   /// Print all texts enqueued by [CieloLioHelper.enqueue()] and execute [callback] when it's done

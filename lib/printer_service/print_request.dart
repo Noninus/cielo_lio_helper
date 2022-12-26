@@ -21,10 +21,10 @@ class PrintRequest {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = Map<String, dynamic>();
     data['operation'] = this.operation;
-    data['value'] = this.value;
     if (this.styles != null) {
       data['styles'] = this.styles!.map((style) => style.toJson()).toList();
     }
+    data['value'] = this.value;
     return data;
   }
 }

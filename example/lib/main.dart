@@ -1,9 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:cielo_lio_helper/cielo_lio_helper.dart';
+import 'package:cielo_lio_helper/printer_service/print_operation.dart';
+import 'package:cielo_lio_helper_example/img_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 const String sampleText = "SAMPLE TEXT";
 
@@ -24,10 +28,33 @@ class _MyAppState extends State<MyApp> {
   LioResponse _printResponse;
   bool _isPrinting = false;
   CancelRequest _cancelRequest;
+  String _permissions = "";
+  String _path = "";
+
+  _requestPermission() async {
+    // You can request multiple permissions at once.
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.storage,
+      Permission.camera,
+      Permission.manageExternalStorage,
+      Permission.photos,
+    ].request();
+    print(statuses[Permission.storage]);
+    print(statuses[Permission.manageExternalStorage]);
+
+    var status = await Permission.storage.status;
+    var status1 = await Permission.manageExternalStorage.status;
+    var status2 = await Permission.camera.status;
+    setState(() {
+      _permissions =
+          'Storage: ${status.isGranted.toString()} | ExternalStorage: ${status1.isGranted.toString()} | Camera: ${status2.isGranted.toString()}';
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _requestPermission();
     initECState();
     initLogicNumberState();
     initBatteryLevelState();
@@ -48,13 +75,17 @@ class _MyAppState extends State<MyApp> {
   printSampleTexts() {
     setState(() => _isPrinting = true);
 
+    printQueue();
+
     for (int i = 15; i <= 30; i += 5) {
       for (int j = 0; j < 10; j++) {
-        CieloLioHelper.enqueue(sampleText, PrintAlignment.CENTER, i, j);
+        CieloLioHelper.enqueue(
+            sampleText, PrintAlignment.CENTER, i, j, PrintOperation.text);
       }
     }
 
-    CieloLioHelper.enqueue("\n\n\n", PrintAlignment.CENTER, 20, 1);
+    CieloLioHelper.enqueue(
+        "\n\n\n", PrintAlignment.CENTER, 20, 1, PrintOperation.text);
 
     CieloLioHelper.printQueue((LioResponse response) {
       setState(() {
@@ -158,9 +189,29 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  printQueue() {
-    CieloLioHelper.enqueue(sampleText, PrintAlignment.CENTER, 30, 1);
-    CieloLioHelper.enqueue("\n\n\n", PrintAlignment.CENTER, 30, 1);
+  printQueue() async {
+    CieloLioHelper.enqueue(
+        sampleText, PrintAlignment.CENTER, 30, 1, PrintOperation.text);
+    CieloLioHelper.enqueue(
+        "\n\n\n", PrintAlignment.CENTER, 30, 1, PrintOperation.text);
+    CieloLioHelper.enqueue(
+        "\n\n\n", PrintAlignment.CENTER, 30, 1, PrintOperation.text);
+    CieloLioHelper.enqueue(
+        'SAGRES TESTES', PrintAlignment.CENTER, 30, 1, PrintOperation.text);
+  }
+
+  _printImage() async {
+    CieloLioHelper.enqueue('INICIO TESTE IMAGEM', PrintAlignment.CENTER, 30, 1,
+        PrintOperation.text);
+
+    CieloLioHelper.enqueue(
+        '$imgString', PrintAlignment.CENTER, 30, 1, PrintOperation.image);
+
+    CieloLioHelper.enqueue(
+        'FIM TESTE IMAGEM', PrintAlignment.CENTER, 30, 1, PrintOperation.text);
+
+    CieloLioHelper.enqueue(
+        "\n\n\n", PrintAlignment.CENTER, 20, 1, PrintOperation.text);
 
     CieloLioHelper.printQueue((LioResponse response) => setState(() {
           _printResponse = response;
@@ -184,6 +235,14 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Column(
             children: [
+              Text('Permissions: $_permissions'),
+              _path != ''
+                  ? Image.file(
+                      File(_path),
+                      scale: 2,
+                    )
+                  : Container(),
+              _path != '' ? Text('_path: $_path') : Container(),
               Text('EC: $_ec'),
               Text('LOGIC NUMBER: $_logicNumber'),
               Text(
@@ -191,6 +250,8 @@ class _MyAppState extends State<MyApp> {
               Text('PRINT STATE: ${checkPrintState()}'),
               ElevatedButton(
                   onPressed: () => printSampleTexts(), child: Text("Imprimir")),
+              ElevatedButton(
+                  onPressed: () => _printImage(), child: Text("print image")),
               ElevatedButton(onPressed: () => checkout(), child: Text("Pagar")),
               ElevatedButton(
                   onPressed: () => cancelLastPayment(),

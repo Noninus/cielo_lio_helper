@@ -26,14 +26,22 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
+
+    packagingOptions{
+        doNotStrip "**/libclisitef.so"
+    }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
 
+    lintOptions {
+        disable 'InvalidPackage'
+    }
+
     defaultConfig {
-        applicationId "dev.mauricifj.cielo_lio_helper_example"
+        applicationId "br.com.sagresinformatica.cielo_lio_helper"
         minSdkVersion 21 // Updated from 16 to 21 because of Order Manager
         targetSdkVersion 30
         versionCode flutterVersionCode.toInteger()

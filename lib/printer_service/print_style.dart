@@ -19,9 +19,15 @@ class Style {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data[PrintAttributes.align] = this.keyAttributesAlign;
-    data[PrintAttributes.textSize] = this.keyAttributesTextsize;
-    data[PrintAttributes.typeface] = this.keyAttributesTypeface;
+    if (this.keyAttributesAlign != null) {
+      data[PrintAttributes.align] = this.keyAttributesAlign;
+    }
+    if (this.keyAttributesTextsize != null) {
+      data[PrintAttributes.textSize] = this.keyAttributesTextsize;
+    }
+    if (this.keyAttributesTypeface != 0) {
+      data[PrintAttributes.typeface] = this.keyAttributesTypeface;
+    }
     return data;
   }
 }
