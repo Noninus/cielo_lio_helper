@@ -35,19 +35,12 @@ class _MyAppState extends State<MyApp> {
     // You can request multiple permissions at once.
     Map<Permission, PermissionStatus> statuses = await [
       Permission.storage,
-      Permission.camera,
-      Permission.manageExternalStorage,
-      Permission.photos,
     ].request();
     print(statuses[Permission.storage]);
-    print(statuses[Permission.manageExternalStorage]);
 
     var status = await Permission.storage.status;
-    var status1 = await Permission.manageExternalStorage.status;
-    var status2 = await Permission.camera.status;
     setState(() {
-      _permissions =
-          'Storage: ${status.isGranted.toString()} | ExternalStorage: ${status1.isGranted.toString()} | Camera: ${status2.isGranted.toString()}';
+      _permissions = 'Storage: ${status.isGranted.toString()} ';
     });
   }
 
