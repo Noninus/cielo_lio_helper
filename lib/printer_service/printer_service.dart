@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'dart:typed_data';
 
 import '../lio_response.dart';
 import '../utils.dart';
