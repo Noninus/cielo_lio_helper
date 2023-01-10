@@ -1,6 +1,6 @@
 name: cielo_lio_helper_example
 description: Demonstrates how to use the cielo_lio_helper plugin.
-version: 1.0.23+23
+version: 1.0.34+34
 
 publish_to: 'none'
 

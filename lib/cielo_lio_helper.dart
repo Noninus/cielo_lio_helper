@@ -67,6 +67,11 @@ class CieloLioHelper {
     _paymentService!.checkout(request, callback);
   }
 
+  /// Cancel last Subscription
+  static cancelLastSubscription() {
+    _paymentService!.cancelLastSubscription();
+  }
+
   /// Sends a [CancelRequest] to Lio and waits until the cancelment is finished or canceled to execute [callback]
   static cancelPayment(
       CancelRequest request, Function(PaymentResponse response) callback) {

@@ -12,6 +12,7 @@ import 'print_alignment.dart';
 import 'print_request.dart';
 import 'print_style.dart';
 import 'queue_manager.dart';
+import 'package:image/image.dart';
 
 class PrinterService {
   final String? _scheme;
@@ -76,6 +77,50 @@ class PrinterService {
 
         File fileImg = File('$path/imagem.jpg');
         fileImg.writeAsBytesSync(decodedBytes);
+
+        //Interpolation nearest
+        if (size == 100) {
+          Image? image = decodeImage(fileImg.readAsBytesSync());
+
+          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+          Image resizedImage = copyResize(image!, width: 340);
+
+          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
+        }
+
+        //Interpolation average
+        if (size == 101) {
+          Image? image = decodeImage(fileImg.readAsBytesSync());
+
+          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+          Image resizedImage = copyResize(image!,
+              width: 340, interpolation: Interpolation.average);
+
+          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
+        }
+
+        //Interpolation cubic
+        if (size == 102) {
+          Image? image = decodeImage(fileImg.readAsBytesSync());
+
+          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+          Image resizedImage = copyResize(image!,
+              width: 340, interpolation: Interpolation.cubic);
+
+          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
+        }
+
+        //Interpolation linear
+        if (size == 103) {
+          Image? image = decodeImage(fileImg.readAsBytesSync());
+
+          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
+          Image resizedImage = copyResize(image!,
+              width: 340, interpolation: Interpolation.linear);
+
+          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
+        }
+
         text = fileImg.path;
       }
 

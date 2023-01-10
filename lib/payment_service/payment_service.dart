@@ -1,5 +1,6 @@
 export '../payment_response.dart';
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cielo_lio_helper/lio_error_response.dart';
@@ -13,6 +14,7 @@ class PaymentService {
   final String? _scheme;
   final String? _host;
   final MethodChannel? _messagesChannel;
+  late StreamSubscription streamSubscription;
   static Stream<PaymentResponse>? _streamLink;
   static const EventChannel _responsesChannel =
       const EventChannel("cielo_lio_helper/payment_responses");
@@ -21,13 +23,17 @@ class PaymentService {
 
   checkout(CheckoutRequest request,
       Function(PaymentResponse response) callback) async {
-    _stream().listen((response) {
+    streamSubscription = _stream().listen((response) {
       print(response.id);
       callback.call(response);
     });
 
     var uri = _generatePaymentUri(request);
     await _messagesChannel!.invokeMethod('payment', {"uri": uri});
+  }
+
+  cancelLastSubscription() {
+    streamSubscription.cancel();
   }
 
   String _generatePaymentUri(CheckoutRequest request) {
