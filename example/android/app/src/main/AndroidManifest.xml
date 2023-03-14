@@ -9,7 +9,8 @@
         android:label="cielo_lio_helper_example"
         android:icon="@mipmap/ic_launcher"
         android:requestLegacyExternalStorage="true"
-        tools:replace="android:label">
+        android:theme="@style/Theme.AppCompat"
+        tools:replace="android:label,android:theme">
         <activity
             android:name=".MainActivity"
             android:launchMode="singleTop"

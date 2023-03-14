@@ -3,19 +3,27 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cielo_lio_helper/cielo_lio_helper.dart';
+import 'package:cielo_lio_helper/payment_service/payment_service.dart';
 import 'package:cielo_lio_helper/printer_service/print_operation.dart';
 import 'package:cielo_lio_helper_example/img_string.dart';
 import 'package:cielo_lio_helper_example/img_string_340_cubic.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 const String sampleText = "SAMPLE TEXT";
 
 const String clientId = "YOUR-CLIENT-ID";
 const String accessToken = "YOUR-ACCESS-TOKEN";
 
-void main() => runApp(MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(MyApp());
+}
 
 class MyApp extends StatefulWidget {
   @override
@@ -32,11 +40,15 @@ class _MyAppState extends State<MyApp> {
   String _permissions = "";
   String _path = "";
   TextEditingController controller = TextEditingController();
+  String textFlutterBarcodeScanner = 'textFlutterBarcodeScanner';
+  String textCamera = 'textCamera';
+  QRViewController controllerCamera;
 
   _requestPermission() async {
     // You can request multiple permissions at once.
     Map<Permission, PermissionStatus> statuses = await [
       Permission.storage,
+      Permission.camera,
     ].request();
     print(statuses[Permission.storage]);
 
@@ -46,6 +58,9 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  StreamSubscription subscription;
+
+  var _platformVersion;
   @override
   void initState() {
     super.initState();
@@ -54,6 +69,16 @@ class _MyAppState extends State<MyApp> {
     initLogicNumberState();
     initBatteryLevelState();
     initCieloLioHelper();
+
+    subscription = CieloLioHelper.checkoutStreamListen2
+        .listen((PaymentResponse paymentResponse) {
+      print("===== CALLBACK $paymentResponse =======");
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _platformVersion = paymentResponse;
+        });
+      });
+    });
   }
 
   initCieloLioHelper() {
@@ -65,6 +90,38 @@ class _MyAppState extends State<MyApp> {
         reversalResponseScheme: "reversal_response",
       ),
     );
+  }
+
+  checkout2() {
+    // var random = Random();
+    // var unitPrice = random.nextInt(400) + 100;
+    // var quantity = random.nextInt(9) + 1;
+    // var total = unitPrice * quantity;
+
+    var request = CheckoutRequest(
+      clientID: "WklO9jhmr0U3OAyMiRrlj0E5H3pHnQnziXTTVsEDkABaMrhWdi",
+      accessToken: "KxSIJKSDsnqHHpBJhF7TUakhpXw2UacaGnfQpV1b0TE8Ocupn5",
+      value: int.parse(controller.text.replaceAll(',', '').replaceAll('.', '')),
+      paymentCode: "CREDITO_AVISTA",
+      installments: 0,
+      email: "dev.sdk@braspag.com.br",
+      merchantCode: "0000000000000003",
+      reference: "mesa x",
+      items: List.from(
+        [
+          Item(
+            sku: "${Random().nextInt(100000) + 1000}",
+            name: "Pagamento mesa x",
+            unitPrice: int.parse(
+                controller.text.replaceAll(',', '').replaceAll('.', '')),
+            quantity: 1,
+            unitOfMeasure: "money",
+          ),
+        ],
+      ),
+    );
+
+    CieloLioHelper.checkout2(request);
   }
 
   printSampleTexts() {
@@ -353,6 +410,22 @@ class _MyAppState extends State<MyApp> {
     return "Unknown";
   }
 
+  void _onQRViewCreated(QRViewController controller) {
+    this.controllerCamera = controller;
+    controller.scannedDataStream.listen((scanData) {
+      setState(() {
+        textCamera = scanData.code;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    subscription.cancel();
+    super.dispose();
+  }
+
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -361,8 +434,12 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Column(
+          child: ListView(
             children: [
+              Text('_platformVersion: $_platformVersion'),
+              ElevatedButton(
+                  onPressed: () => checkout2(), child: Text("checkout2")),
+              Text("00---000---"),
               Text('Permissions: $_permissions'),
               _path != ''
                   ? Image.file(
@@ -399,6 +476,29 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                   onPressed: () => cancelLastPayment(),
                   child: Text("Cancelar último pagamento")),
+              Text(textFlutterBarcodeScanner),
+              IconButton(
+                  onPressed: () async {
+                    String barcodeScanRes =
+                        await FlutterBarcodeScanner.scanBarcode(
+                            "#f34b46", "Cancelar", true, ScanMode.QR);
+                    if (barcodeScanRes != "-1") {
+                      setState(() {
+                        textFlutterBarcodeScanner = barcodeScanRes;
+                      });
+                    }
+                  },
+                  icon: Icon(Icons.camera)),
+              Text(textCamera),
+              Container(
+                height: 250,
+                width: 250,
+                child: QRView(
+                  key: qrKey,
+                  onQRViewCreated: _onQRViewCreated,
+                ),
+              ),
+              IconButton(onPressed: () async {}, icon: Icon(Icons.camera))
             ],
           ),
         ),

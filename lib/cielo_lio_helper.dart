@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:cielo_lio_helper/lio_response.dart';
 import 'package:cielo_lio_helper/payment_service/checkout_request.dart';
+import 'package:cielo_lio_helper/payment_service/payment_service2.dart';
 import 'package:cielo_lio_helper/printer_service/print_operation.dart';
 import 'package:flutter/services.dart';
 
@@ -22,6 +23,7 @@ class CieloLioHelper {
   static PrinterService? _printer;
   static PaymentService? _paymentService;
   static CancelService? _cancelService;
+  static PaymentService2? _paymentService2;
 
   /// Sets host and schemes for print, checkout and cancel responses from Lio
   static init({String? host, SchemeAggregate? schemes}) {
@@ -30,6 +32,8 @@ class CieloLioHelper {
         PaymentService(schemes.paymentResponseScheme, host, _channel);
     _cancelService =
         CancelService(schemes.reversalResponseScheme, host, _channel);
+    _paymentService2 =
+        PaymentService2(schemes.paymentResponseScheme, host, _channel);
   }
 
   /// Enqueue text and its style but does not print
@@ -77,4 +81,13 @@ class CieloLioHelper {
       CancelRequest request, Function(PaymentResponse response) callback) {
     _cancelService!.cancelPayment(request, callback);
   }
+
+  /// Sends a [CheckoutRequest] to Lio and waits until the payment is finished or canceled to execute [callback]
+  static checkout2(CheckoutRequest request) {
+    _paymentService2!.checkout(request);
+  }
+
+  /// Stream do checkout
+  static Stream<PaymentResponse> get checkoutStreamListen2 =>
+      _paymentService2!.streamData;
 }

@@ -1,6 +1,6 @@
 name: cielo_lio_helper_example
 description: Demonstrates how to use the cielo_lio_helper plugin.
-version: 1.0.34+34
+version: 1.0.36+36
 
 publish_to: 'none'
 
@@ -8,7 +8,9 @@ environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  permission_handler: ^9.2.0
+  permission_handler: any
+  flutter_barcode_scanner: ^2.0.0
+  qr_code_scanner: ^1.0.1
   flutter:
     sdk: flutter
 

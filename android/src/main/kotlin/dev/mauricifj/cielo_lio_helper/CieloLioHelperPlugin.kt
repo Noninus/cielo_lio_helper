@@ -240,6 +240,7 @@ class CieloLioHelperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, Plu
             val json = extractJsonFromUri(uri)
             Log.d(TAG, "PAYMENT RESPONSE JSON: $json")
             Log.d(TAG, "PAYMENT RESPONSE JSON LENGTH: ${json?.length}")
+            channel.invokeMethod("checkoutCallback", json)
             paymentSink?.success(json)
           } catch (e: Exception) {
             Log.e(TAG, "PAYMENT ERROR: ${e.message}", e)
