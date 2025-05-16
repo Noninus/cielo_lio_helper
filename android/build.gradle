@@ -19,8 +19,8 @@ rootProject.allprojects {
     repositories {
         google()
         jcenter()
-        maven{
-            url "${project(':aar').projectDir}/build"
+        flatDir {
+            dirs project(':cielo_lio_helper').file('libs')
         }
     }
 }
