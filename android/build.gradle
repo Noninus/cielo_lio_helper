@@ -41,5 +41,5 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation(name: 'order-manager-1.5.1', ext: 'aar')
+    api files('libs/order-manager-1.5.1.aar')
 }
