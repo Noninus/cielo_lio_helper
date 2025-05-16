@@ -1,3 +1,8 @@
+plugins {
+    id 'com.android.library'
+    id 'kotlin-android'
+}
+
 group 'dev.mauricifj.cielo_lio_helper'
 version '1.0-SNAPSHOT'
 
@@ -13,11 +18,6 @@ buildscript {
         classpath 'com.android.tools.build:gradle:4.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
-}
-
-plugins {
-    id 'com.android.library'
-    id 'kotlin-android'
 }
 
 android {
