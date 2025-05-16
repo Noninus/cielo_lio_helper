@@ -1,3 +1,6 @@
+group 'dev.mauricifj.cielo_lio_helper'
+version '1.0-SNAPSHOT'
+
 buildscript {
     ext.kotlin_version = '1.6.10'
     ext.order_manager_version = '1.5.1'
@@ -12,14 +15,18 @@ buildscript {
     }
 }
 
+rootProject.allprojects {
+    repositories {
+        google()
+        jcenter()
+        flatDir {
+            dirs 'libs'
+        }
+    }
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-
-// ✅ Ainda é necessário para plugins Flutter:
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
-group 'dev.mauricifj.cielo_lio_helper'
-version '1.0-SNAPSHOT'
 
 android {
     compileSdkVersion 33
@@ -29,14 +36,6 @@ android {
     }
     defaultConfig {
         minSdkVersion 21
-    }
-}
-
-repositories {
-    google()
-    jcenter()
-    flatDir {
-        dirs 'libs'
     }
 }
 
