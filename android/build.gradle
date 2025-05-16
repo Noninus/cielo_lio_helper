@@ -3,6 +3,7 @@ version '1.0-SNAPSHOT'
 
 buildscript {
     ext.kotlin_version = '1.6.10'
+    ext.order_manager_version = '1.5.1'
     repositories {
         google()
         jcenter()
@@ -14,9 +15,18 @@ buildscript {
     }
 }
 
+rootProject.allprojects {
+    repositories {
+        google()
+        jcenter()
+        flatDir {
+            dirs "${projectDir}/libs"
+        }
+    }
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
     compileSdkVersion 33
@@ -26,14 +36,6 @@ android {
     }
     defaultConfig {
         minSdkVersion 21
-    }
-}
-
-repositories {
-    google()
-    jcenter()
-    flatDir {
-        dirs "${projectDir}/libs"
     }
 }
 
