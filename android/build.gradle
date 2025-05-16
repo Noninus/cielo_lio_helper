@@ -15,6 +15,7 @@ buildscript {
 plugins {
     id 'com.android.library'
     id 'kotlin-android'
+    id 'dev.flutter.flutter-plugin'
 }
 
 group 'dev.mauricifj.cielo_lio_helper'
