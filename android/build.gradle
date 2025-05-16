@@ -20,7 +20,7 @@ rootProject.allprojects {
         google()
         jcenter()
         flatDir {
-            dirs 'libs'
+            dirs "${projectDir}/libs"
         }
     }
 }
