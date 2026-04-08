@@ -5,7 +5,7 @@ version: 1.0.36+36
 publish_to: 'none'
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: ">=2.12.0 <4.0.0"
 
 dependencies:
   permission_handler: any

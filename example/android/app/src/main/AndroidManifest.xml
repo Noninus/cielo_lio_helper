@@ -4,7 +4,11 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-    <!-- TODO: ADD 'tools:replace="android:label"' and its namespace -->
+
+    <queries>
+        <package android:name="com.ads.lio.uriappclient" />
+    </queries>
+
    <application
         android:label="cielo_lio_helper_example"
         android:icon="@mipmap/ic_launcher"
@@ -13,6 +17,7 @@
         tools:replace="android:label,android:theme">
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
@@ -73,5 +78,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="cs_integration_type"
+            android:value="uri"
+            tools:replace="android:value" />
     </application>
 </manifest>

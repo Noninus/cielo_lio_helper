@@ -34,15 +34,15 @@ class _MyAppState extends State<MyApp> {
   String _ec = 'Unknown';
   String _logicNumber = 'Unknown';
   double _batteryLevel = -1;
-  LioResponse _printResponse;
+  LioResponse? _printResponse;
   bool _isPrinting = false;
-  CancelRequest _cancelRequest;
+  CancelRequest? _cancelRequest;
   String _permissions = "";
   String _path = "";
   TextEditingController controller = TextEditingController();
   String textFlutterBarcodeScanner = 'textFlutterBarcodeScanner';
   String textCamera = 'textCamera';
-  QRViewController controllerCamera;
+  QRViewController? controllerCamera;
 
   _requestPermission() async {
     // You can request multiple permissions at once.
@@ -58,7 +58,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  StreamSubscription subscription;
+  StreamSubscription? subscription;
 
   var _platformVersion;
   @override
@@ -148,11 +148,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initECState() async {
-    String ec;
+    String ec = 'Unknown';
     try {
       ec = await CieloLioHelper.ec;
     } on PlatformException {
-      _ec = 'Failed to get ec.';
+      ec = 'Failed to get ec.';
     }
 
     if (!mounted) return;
@@ -225,10 +225,10 @@ class _MyAppState extends State<MyApp> {
       _cancelRequest = CancelRequest(
         accessToken: accessToken,
         clientID: clientId,
-        authCode: response.payments[0].authCode,
-        cieloCode: response.payments[0].cieloCode,
-        merchantCode: response.payments[0].merchantCode,
-        value: response.payments[0].amount,
+        authCode: response.payments![0].authCode,
+        cieloCode: response.payments![0].cieloCode,
+        merchantCode: response.payments![0].merchantCode,
+        value: response.payments![0].amount,
         id: response.id,
       );
       CieloLioHelper.cancelLastSubscription();
@@ -237,7 +237,7 @@ class _MyAppState extends State<MyApp> {
 
   cancelLastPayment() {
     if (_cancelRequest != null) {
-      CieloLioHelper.cancelPayment(_cancelRequest, (response) {
+      CieloLioHelper.cancelPayment(_cancelRequest!, (response) {
         print(response.id);
       });
     }
@@ -406,7 +406,7 @@ class _MyAppState extends State<MyApp> {
 
   String checkPrintState() {
     if (_isPrinting) return "PRINTING...";
-    if (_printResponse?.message != null) return _printResponse.message;
+    if (_printResponse?.message != null) return _printResponse!.message;
     return "Unknown";
   }
 
@@ -414,14 +414,14 @@ class _MyAppState extends State<MyApp> {
     this.controllerCamera = controller;
     controller.scannedDataStream.listen((scanData) {
       setState(() {
-        textCamera = scanData.code;
+        textCamera = scanData.code ?? '';
       });
     });
   }
 
   @override
   void dispose() {
-    subscription.cancel();
+    subscription!.cancel();
     super.dispose();
   }
 
