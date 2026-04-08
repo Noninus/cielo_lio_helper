@@ -51,7 +51,7 @@ android {
 
     defaultConfig {
         applicationId "br.com.sagresinformatica.cielo_lio_helper"
-        minSdkVersion 25
+        minSdkVersion 23
         targetSdkVersion 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
