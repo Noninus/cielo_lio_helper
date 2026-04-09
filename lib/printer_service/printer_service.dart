@@ -31,7 +31,7 @@ class PrinterService {
         _queueManager!.processResponse(response);
       } else {
         _queueManager!.clear();
-        _queueManager!.callback!.call(response);
+        _queueManager!.callback?.call(response);
       }
     });
   }

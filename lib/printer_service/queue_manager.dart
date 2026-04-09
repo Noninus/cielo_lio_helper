@@ -13,12 +13,15 @@ class QueueManager {
       : this._messagesChannel = messagesChannel;
 
   processResponse(LioResponse response) {
+    if (_queue!.isEmpty) return;
     _queue!.removeFirst();
     if (_queue!.isNotEmpty) {
       _invokeMethodPrint(_queue!.first);
     } else {
-      this.callback!.call(response);
-      this.callback = null;
+      if (this.callback != null) {
+        this.callback!.call(response);
+        this.callback = null;
+      }
     }
   }
 
