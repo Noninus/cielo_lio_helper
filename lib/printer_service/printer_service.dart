@@ -72,8 +72,7 @@ class PrinterService {
       if (operation == "PRINT_IMAGE") {
         final decodedBytes = dataFromBase64String(text);
 
-        var directory = Directory('/storage/emulated/0/Download');
-        final String path = directory.path;
+        final String path = Directory.systemTemp.path;
 
         File fileImg = File('$path/imagem.jpg');
         fileImg.writeAsBytesSync(decodedBytes);
