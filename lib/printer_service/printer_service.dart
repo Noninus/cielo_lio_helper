@@ -27,6 +27,7 @@ class PrinterService {
   PrinterService(this._scheme, this._host, MethodChannel messagesChannel) {
     _queueManager = QueueManager(messagesChannel: messagesChannel);
     _stream().listen((LioResponse response) {
+      _limparImagemTemp();
       if (response.code == 0) {
         _queueManager!.processResponse(response);
       } else {
@@ -34,6 +35,13 @@ class PrinterService {
         _queueManager!.callback?.call(response);
       }
     });
+  }
+
+  void _limparImagemTemp() {
+    try {
+      final file = File('${Directory.systemTemp.path}/imagem.jpg');
+      if (file.existsSync()) file.deleteSync();
+    } catch (_) {}
   }
 
   static Stream<LioResponse> _stream() {
