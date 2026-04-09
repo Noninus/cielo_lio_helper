@@ -5,6 +5,6 @@ class LioResponse {
   LioResponse(this.code, this.message);
 
   LioResponse.fromJson(Map<String, dynamic> json)
-      : code = json['code'],
-        message = json['message'];
+      : code = json['code'] ?? -1,
+        message = json['message'] ?? '';
 }
