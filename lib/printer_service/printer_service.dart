@@ -24,24 +24,42 @@ class PrinterService {
 
   QueueManager? _queueManager;
 
+  /// Quem abre esse arquivo eh o app da Cielo, em outro processo, e ele nao
+  /// enxerga os diretorios privados deste app. Por isso o armazenamento
+  /// compartilhado vem primeiro; o privado fica como ultimo recurso, para o
+  /// caso de o sistema barrar a gravacao em /Download.
+  static const String _imagemPathCompartilhado =
+      '/storage/emulated/0/Download/imagem.jpg';
+
+  static String get _imagemPathPrivado =>
+      '${Directory.systemTemp.path}/imagem.jpg';
+
+  static List<String> get _imagemPaths =>
+      [_imagemPathCompartilhado, _imagemPathPrivado];
+
   PrinterService(this._scheme, this._host, MethodChannel messagesChannel) {
     _queueManager = QueueManager(messagesChannel: messagesChannel);
     _stream().listen((LioResponse response) {
-      _limparImagemTemp();
       if (response.code == 0) {
         _queueManager!.processResponse(response);
       } else {
         _queueManager!.clear();
         _queueManager!.callback?.call(response);
       }
+
+      // Apaga so depois que a fila esvazia: se a imagem nao for o primeiro
+      // item, apagar a cada resposta a remove antes de ser enviada.
+      if (_queueManager!.isEmpty) _limparImagemTemp();
     });
   }
 
   void _limparImagemTemp() {
-    try {
-      final file = File('${Directory.systemTemp.path}/imagem.jpg');
-      if (file.existsSync()) file.deleteSync();
-    } catch (_) {}
+    for (final path in _imagemPaths) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) file.deleteSync();
+      } catch (_) {}
+    }
   }
 
   static Stream<LioResponse> _stream() {
@@ -68,6 +86,23 @@ class PrinterService {
     return base64Decode(base64String);
   }
 
+  /// Grava a imagem no primeiro caminho que aceitar a escrita.
+  File _gravarImagemTemp(Uint8List bytes) {
+    Object? ultimoErro;
+    for (final path in _imagemPaths) {
+      try {
+        final file = File(path);
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(bytes);
+        return file;
+      } catch (e) {
+        ultimoErro = e;
+      }
+    }
+    throw FileSystemException(
+        'Nao foi possivel gravar a imagem para impressao: $ultimoErro');
+  }
+
   String _generatePrintUri(String text, PrintAlignment alignment, int size,
       int typeface, String operation) {
     try {
@@ -80,10 +115,7 @@ class PrinterService {
       if (operation == "PRINT_IMAGE") {
         final decodedBytes = dataFromBase64String(text);
 
-        final String path = Directory.systemTemp.path;
-
-        File fileImg = File('$path/imagem.jpg');
-        fileImg.writeAsBytesSync(decodedBytes);
+        File fileImg = _gravarImagemTemp(decodedBytes);
 
         //Interpolation nearest
         if (size == 100) {

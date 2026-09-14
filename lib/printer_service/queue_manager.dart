@@ -12,6 +12,8 @@ class QueueManager {
   QueueManager({MethodChannel? messagesChannel})
       : this._messagesChannel = messagesChannel;
 
+  bool get isEmpty => _queue?.isEmpty ?? true;
+
   processResponse(LioResponse response) {
     if (_queue!.isEmpty) return;
     _queue!.removeFirst();
