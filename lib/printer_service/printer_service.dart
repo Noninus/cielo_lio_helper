@@ -1,174 +1,103 @@
 export 'print_alignment.dart';
 
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'dart:typed_data';
 
-import '../lio_response.dart';
-import '../utils.dart';
-import 'print_alignment.dart';
-import 'print_request.dart';
-import 'print_style.dart';
-import 'queue_manager.dart';
 import 'package:image/image.dart';
 
+import '../lio_response.dart';
+import 'print_alignment.dart';
+import 'print_attributes.dart';
+
+/// Impressao pelo SDK da Cielo, dentro do proprio processo.
+///
+/// A integracao anterior era por deep link `lio://print`, que passava o
+/// *caminho de um arquivo* para o app da Cielo abrir. Isso deixou de funcionar:
+/// o app da Cielo roda com outro UID e nao enxerga o diretorio privado deste
+/// app, e a partir do Android 11 tambem nao enxerga o que gravamos em area
+/// compartilhada. Aqui os bytes vao direto para o SDK, sem arquivo no meio.
+///
+/// A API publica (`enqueue` / `print`) continua identica.
 class PrinterService {
+  // ignore: unused_field
   final String? _scheme;
+  // ignore: unused_field
   final String? _host;
 
-  static Stream<LioResponse>? _streamLink;
-  static const EventChannel _responsesChannel =
-      const EventChannel("cielo_lio_helper/print_responses");
+  final MethodChannel _messagesChannel;
 
-  QueueManager? _queueManager;
+  /// Itens ja preparados, na ordem em que devem sair na impressora.
+  final List<Map<String, dynamic>> _items = [];
 
-  /// Quem abre esse arquivo eh o app da Cielo, em outro processo, e ele nao
-  /// enxerga os diretorios privados deste app. Por isso o armazenamento
-  /// compartilhado vem primeiro; o privado fica como ultimo recurso, para o
-  /// caso de o sistema barrar a gravacao em /Download.
-  static const String _imagemPathCompartilhado =
-      '/storage/emulated/0/Download/imagem.jpg';
+  PrinterService(this._scheme, this._host, this._messagesChannel);
 
-  static String get _imagemPathPrivado =>
-      '${Directory.systemTemp.path}/imagem.jpg';
-
-  static List<String> get _imagemPaths =>
-      [_imagemPathCompartilhado, _imagemPathPrivado];
-
-  PrinterService(this._scheme, this._host, MethodChannel messagesChannel) {
-    _queueManager = QueueManager(messagesChannel: messagesChannel);
-    _stream().listen((LioResponse response) {
-      if (response.code == 0) {
-        _queueManager!.processResponse(response);
-      } else {
-        _queueManager!.clear();
-        _queueManager!.callback?.call(response);
-      }
-
-      // Apaga so depois que a fila esvazia: se a imagem nao for o primeiro
-      // item, apagar a cada resposta a remove antes de ser enviada.
-      if (_queueManager!.isEmpty) _limparImagemTemp();
-    });
-  }
-
-  void _limparImagemTemp() {
-    for (final path in _imagemPaths) {
-      try {
-        final file = File(path);
-        if (file.existsSync()) file.deleteSync();
-      } catch (_) {}
-    }
-  }
-
-  static Stream<LioResponse> _stream() {
-    if (_streamLink == null) {
-      _streamLink = _responsesChannel
-          .receiveBroadcastStream("print_responses")
-          .cast<String>()
-          .map((response) => LioResponse.fromJson(jsonDecode(response)));
-    }
-    return _streamLink!;
-  }
-
+  /// Enfileira um item, sem imprimir.
+  ///
+  /// Para `PRINT_IMAGE`, [text] e a imagem em base64. Os tamanhos 100 a 103
+  /// continuam significando "redimensionar para 340px de largura", cada um com
+  /// uma interpolacao diferente.
   enqueue(String text, PrintAlignment alignment, int size, int typeface,
       String operation) {
-    var uri = _generatePrintUri(text, alignment, size, typeface, operation);
-    _queueManager!.enqueue(uri);
+    final attributes = <String, int>{
+      PrintAttributes.align: alignment.toPrinterAttribute(),
+      PrintAttributes.textSize: size,
+      PrintAttributes.typeface: typeface,
+    };
+
+    if (operation == "PRINT_IMAGE") {
+      _items.add({
+        'operation': operation,
+        'bytes': _prepararImagem(text, size),
+        'attributes': attributes,
+      });
+    } else {
+      _items.add({
+        'operation': operation,
+        'text': text,
+        'attributes': attributes,
+      });
+    }
   }
 
-  print(Function(LioResponse response) callback) {
-    _queueManager!.print(callback);
+  /// Imprime tudo o que foi enfileirado e chama [callback] ao final.
+  ///
+  /// A fila e esvaziada antes da chamada nativa, entao uma falha nao deixa
+  /// itens presos para a proxima impressao.
+  print(Function(LioResponse response) callback) async {
+    final items = List<Map<String, dynamic>>.from(_items);
+    _items.clear();
+
+    try {
+      final response = await _messagesChannel
+          .invokeMethod('printItems', {'items': items});
+
+      callback(LioResponse.fromJson(Map<String, dynamic>.from(response as Map)));
+    } catch (e) {
+      callback(LioResponse(1, e.toString()));
+    }
+  }
+
+  Uint8List _prepararImagem(String base64String, int size) {
+    final bytes = dataFromBase64String(base64String);
+
+    final interpolacao = const {
+      100: Interpolation.nearest,
+      101: Interpolation.average,
+      102: Interpolation.cubic,
+      103: Interpolation.linear,
+    }[size];
+
+    if (interpolacao == null) return bytes;
+
+    final image = decodeImage(bytes);
+    if (image == null) return bytes;
+
+    return Uint8List.fromList(
+        encodeJpg(copyResize(image, width: 340, interpolation: interpolacao)));
   }
 
   Uint8List dataFromBase64String(String base64String) {
     return base64Decode(base64String);
-  }
-
-  /// Grava a imagem no primeiro caminho que aceitar a escrita.
-  File _gravarImagemTemp(Uint8List bytes) {
-    Object? ultimoErro;
-    for (final path in _imagemPaths) {
-      try {
-        final file = File(path);
-        file.parent.createSync(recursive: true);
-        file.writeAsBytesSync(bytes);
-        return file;
-      } catch (e) {
-        ultimoErro = e;
-      }
-    }
-    throw FileSystemException(
-        'Nao foi possivel gravar a imagem para impressao: $ultimoErro');
-  }
-
-  String _generatePrintUri(String text, PrintAlignment alignment, int size,
-      int typeface, String operation) {
-    try {
-      var style = Style(
-          keyAttributesAlign: alignment.toPrinterAttribute(),
-          keyAttributesTextsize: size,
-          keyAttributesTypeface: typeface);
-      var styles = List<Style>.from([style]);
-
-      if (operation == "PRINT_IMAGE") {
-        final decodedBytes = dataFromBase64String(text);
-
-        File fileImg = _gravarImagemTemp(decodedBytes);
-
-        //Interpolation nearest
-        if (size == 100) {
-          Image? image = decodeImage(fileImg.readAsBytesSync());
-
-          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-          Image resizedImage = copyResize(image!, width: 340);
-
-          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
-        }
-
-        //Interpolation average
-        if (size == 101) {
-          Image? image = decodeImage(fileImg.readAsBytesSync());
-
-          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-          Image resizedImage = copyResize(image!,
-              width: 340, interpolation: Interpolation.average);
-
-          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
-        }
-
-        //Interpolation cubic
-        if (size == 102) {
-          Image? image = decodeImage(fileImg.readAsBytesSync());
-
-          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-          Image resizedImage = copyResize(image!,
-              width: 340, interpolation: Interpolation.cubic);
-
-          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
-        }
-
-        //Interpolation linear
-        if (size == 103) {
-          Image? image = decodeImage(fileImg.readAsBytesSync());
-
-          // Resize the image to a 120x? thumbnail (maintaining the aspect ratio).
-          Image resizedImage = copyResize(image!,
-              width: 340, interpolation: Interpolation.linear);
-
-          fileImg.writeAsBytesSync(encodeJpg(resizedImage));
-        }
-
-        text = fileImg.path;
-      }
-
-      PrintRequest printRequest =
-          new PrintRequest(operation, styles, List.from([text]));
-      String base64 = toBase64(printRequest);
-      return "lio://print?request=$base64&urlCallback=$_scheme://$_host";
-    } catch (e) {
-      throw e;
-    }
   }
 }

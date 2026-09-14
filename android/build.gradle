@@ -51,4 +51,11 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation(name: 'order-manager-2.7.2', ext: 'aar')
+
+    // O aar acima entra por flatDir, que nao resolve dependencias transitivas.
+    // Estas sao as que o order-manager referencia em runtime (ver o .pom do SDK);
+    // sem elas, PrinterManager quebra com NoClassDefFoundError.
+    implementation(name: 'event-tracker-1.0.0', ext: 'aar')
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0'
+    implementation 'com.google.code.gson:gson:2.8.0'
 }

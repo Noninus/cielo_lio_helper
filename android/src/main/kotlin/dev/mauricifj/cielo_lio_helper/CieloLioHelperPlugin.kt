@@ -4,14 +4,19 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import androidx.annotation.NonNull
 import cielo.orders.domain.Credentials
 import cielo.sdk.info.InfoManager
 import cielo.sdk.order.OrderManager
+import cielo.sdk.order.PrinterListener
+import cielo.sdk.printer.PrinterManager
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -154,7 +159,100 @@ class CieloLioHelperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, Plu
           }
           result.success(retrieveOrderById(clientId!!, accessToken!!, id!!))
         }
+        "printItems" -> printItems(call, result)
         else -> result.notImplemented()
+      }
+    }
+  }
+
+  /**
+   * Imprime pelo SDK da Cielo, dentro deste processo.
+   *
+   * A integracao antiga mandava o caminho de um arquivo por deep link, e quem
+   * abria era o app da Cielo, com outro UID. Isso quebra: diretorio privado do
+   * app nao e visivel para ele, e no Android 11+ o que gravamos em area
+   * compartilhada tambem nao. Aqui o bitmap vai direto, sem arquivo no meio.
+   */
+  private fun printItems(call: MethodCall, result: Result) {
+    val items = call.argument<List<Map<String, Any?>>>("items")
+    val reply = ReplyOnce(result)
+
+    if (items.isNullOrEmpty()) {
+      reply.send(0, "SUCCESS")
+      return
+    }
+
+    try {
+      printNext(PrinterManager(applicationContext), items, 0, reply)
+    } catch (e: Throwable) {
+      Log.e(TAG, "PRINT ERROR: ${e.message}", e)
+      reply.send(1, e.message ?: "PRINT ERROR")
+    }
+  }
+
+  private fun printNext(
+      manager: PrinterManager,
+      items: List<Map<String, Any?>>,
+      index: Int,
+      reply: ReplyOnce
+  ) {
+    if (index >= items.size) {
+      reply.send(0, "SUCCESS")
+      return
+    }
+
+    val item = items[index]
+
+    val attributes = HashMap<String, Int>()
+    (item["attributes"] as? Map<*, *>)?.forEach { (key, value) ->
+      if (key is String && value is Int) attributes[key] = value
+    }
+
+    val listener = object : PrinterListener {
+      override fun onPrintSuccess() {
+        printNext(manager, items, index + 1, reply)
+      }
+
+      override fun onError(throwable: Throwable?) {
+        Log.e(TAG, "PRINT ERROR: ${throwable?.message}", throwable)
+        reply.send(1, throwable?.message ?: "PRINT ERROR")
+      }
+
+      override fun onWithoutPaper() {
+        reply.send(2, "WITHOUT PAPER")
+      }
+    }
+
+    try {
+      if (item["operation"] == "PRINT_IMAGE") {
+        val bytes = item["bytes"] as? ByteArray
+        val bitmap = bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+
+        if (bitmap == null) {
+          reply.send(1, "INVALID IMAGE")
+          return
+        }
+
+        manager.printImage(bitmap, attributes, listener)
+      } else {
+        manager.printText(item["text"] as? String ?: "", attributes, listener)
+      }
+    } catch (e: Throwable) {
+      Log.e(TAG, "PRINT ERROR: ${e.message}", e)
+      reply.send(1, e.message ?: "PRINT ERROR")
+    }
+  }
+
+  /** O SDK chama o listener em thread propria; o Result tem que voltar na main. */
+  private class ReplyOnce(private val result: Result) {
+    private var done = false
+
+    fun send(code: Int, message: String) {
+      if (done) return
+      done = true
+
+      Handler(Looper.getMainLooper()).post {
+        result.success(mapOf("code" to code, "message" to message))
       }
     }
   }
